@@ -1,0 +1,46 @@
+version: '2'
+services:
+  postgres_host:
+    image: postgres:10-alpine
+    restart: always
+    ports: ["5433:5432"]
+  postgres_client:
+    build:
+      context: ./postgres_client
+    depends_on:
+      - postgres_host
+    tty: true
+    environment:
+      - APP_POSTGRES_HOST=postgres_host
+      - APP_POSTGRES_PORT=5432
+    volumes:
+      - /tmp/data:/data
+    links: [postgres_host]
+  notebook:
+    build:
+      context: ./notebook
+    depends_on:
+      - postgres_host
+    environment:
+      - APP_POSTGRES_HOST=postgres_host
+      - APP_POSTGRES_PORT=5432
+    ports: ["8888:8888"]
+    links: [postgres_host]
+    volumes:
+      - ../jupyter:/home/jovyan/work
+      - ../data:/home/jovyan/data
+    environment:
+      USE_HTTPS: "yes"
+      PASSWORD: ""
+  python_etl:
+    build:
+      context: ./python_etl
+    depends_on:
+      - postgres_host
+    tty: true
+    environment:
+      - APP_POSTGRES_HOST=postgres_host
+      - APP_POSTGRES_PORT=5432
+    volumes:
+      - /tmp/data:/data
+    links: [postgres_host]
